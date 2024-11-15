@@ -1,6 +1,6 @@
 [project]
 name = "l2cs"
-version = "0.0.1"
+version = "0.0.2"
 description = "The official PyTorch implementation of L2CS-Net for gaze estimation and tracking"
 authors = [
     {name = "Ahmed Abderlrahman"},
@@ -25,7 +25,8 @@ dependencies = [
     'scipy>=1.5.4',
     'torch>=1.10.1',
     'torchvision>=0.11.2',
-    'face_detection@git+https://github.com/elliottzheng/face-detection'
+    'face_detection@git+https://github.com/elliottzheng/face-detection',
+     'gdown>=4.7.1',  # For model downloading
 ]
 
 [project.urls]
