@@ -93,6 +93,34 @@ def get_fc_params(model):
         for module_name, module in b[i].named_modules():
             for name, param in module.named_parameters():
                 yield param
+
+def get_ignored_params_mpii(model):
+    # Generator function that yields ignored params.
+    b = [model.module.conv1, model.module.bn1, model.module.fc_finetune]
+    for i in range(len(b)):
+        for module_name, module in b[i].named_modules():
+            if 'bn' in module_name:
+                module.eval()
+            for name, param in module.named_parameters():
+                yield param
+
+def get_non_ignored_params_mpii(model):
+    # Generator function that yields params that will be optimized.
+    b = [model.module.layer1, model.module.layer2, model.module.layer3, model.module.layer4]
+    for i in range(len(b)):
+        for module_name, module in b[i].named_modules():
+            if 'bn' in module_name:
+                module.eval()
+            for name, param in module.named_parameters():
+                yield param
+
+def get_fc_params_mpii(model):
+    # Generator function that yields fc layer params.
+    b = [model.module.fc_yaw_gaze, model.module.fc_pitch_gaze]
+    for i in range(len(b)):
+        for module_name, module in b[i].named_modules():
+            for name, param in module.named_parameters():
+                yield param
                 
 def load_filtered_state_dict(model, snapshot):
     # By user apaszke from discuss.pytorch.org
@@ -272,7 +300,7 @@ if __name__ == '__main__':
             model = nn.DataParallel(model)
             model.to(gpu)
             print('Loading data.')
-            dataset=Mpiigaze(testlabelpathombined,args.gazeMpiimage_dir, transformations, True, fold)
+            dataset=Mpiigaze(testlabelpathombined,args.gazeMpiimage_dir, transformations, True, 180, fold)
             train_loader_gaze = DataLoader(
                 dataset=dataset,
                 batch_size=int(batch_size),
@@ -296,9 +324,9 @@ if __name__ == '__main__':
 
             # Optimizer gaze
             optimizer_gaze = torch.optim.Adam([
-                {'params': get_ignored_params(model, args.arch), 'lr': 0},
-                {'params': get_non_ignored_params(model, args.arch), 'lr': args.lr},
-                {'params': get_fc_params(model, args.arch), 'lr': args.lr}
+                {'params': get_ignored_params_mpii(model), 'lr': 0},
+                {'params': get_non_ignored_params_mpii(model), 'lr': args.lr},
+                {'params': get_fc_params_mpii(model), 'lr': args.lr}
             ], args.lr)
 
             
@@ -375,7 +403,7 @@ if __name__ == '__main__':
                 if epoch % 1 == 0 and epoch < num_epochs:
                     print('Taking snapshot...',
                         torch.save(model.state_dict(),
-                                    output+'/fold' + str(fold) +'/'+
+                                    output+'fold' + str(fold) +'/'+
                                     '_epoch_' + str(epoch+1) + '.pkl')
                         )
                     
